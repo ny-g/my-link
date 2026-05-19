@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { LinkItem } from "@/data/links"
 import { Card, CardContent } from "@/components/ui/card"
-import { Camera, Video, BookOpen, Code, Briefcase, Link as LinkIcon, Share2, PenLine, Terminal, CheckCircle2, Plus } from "lucide-react"
+import { PenLine, Terminal, CheckCircle2, Plus, Share2, Trash2, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore"
+import { collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 
@@ -42,6 +42,10 @@ export default function Page() {
   const [links, setLinks] = useState<LinkItem[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
+  const [deleteTargetLink, setDeleteTargetLink] = useState<LinkItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -49,8 +53,8 @@ export default function Page() {
         const q = query(collection(db, "users", "anonymous", "links"), orderBy("order", "asc"))
         const querySnapshot = await getDocs(q)
         const fetchedLinks: LinkItem[] = []
-        querySnapshot.forEach((doc) => {
-          fetchedLinks.push({ id: doc.id, ...doc.data() } as LinkItem)
+        querySnapshot.forEach((docSnap) => {
+          fetchedLinks.push({ id: docSnap.id, ...docSnap.data() } as LinkItem)
         })
         setLinks(fetchedLinks)
       } catch (error) {
@@ -63,11 +67,26 @@ export default function Page() {
     fetchLinks()
   }, [])
 
+  // 링크 추가 폼
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      url: "",
+    },
+  })
+
+  // 링크 수정 폼
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -104,6 +123,58 @@ export default function Page() {
       setIsAddDialogOpen(false)
     } catch (error) {
       console.error("Error adding document: ", error)
+    }
+  }
+
+  // 수정 모드 진입
+  const handleEditStart = (link: LinkItem) => {
+    setEditingLinkId(link.id)
+    resetEdit({ title: link.title, url: link.url })
+  }
+
+  // 수정 취소
+  const handleEditCancel = () => {
+    setEditingLinkId(null)
+    resetEdit()
+  }
+
+  // 수정 저장
+  const onEditSubmit = async (data: FormValues) => {
+    if (!editingLinkId) return
+    setIsSaving(true)
+    try {
+      const linkRef = doc(db, "users", "anonymous", "links", editingLinkId)
+      await updateDoc(linkRef, {
+        title: data.title,
+        url: data.url,
+      })
+      setLinks((prev) =>
+        prev.map((l) =>
+          l.id === editingLinkId ? { ...l, title: data.title, url: data.url } : l
+        )
+      )
+      setEditingLinkId(null)
+      resetEdit()
+    } catch (error) {
+      console.error("Error updating document: ", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // 삭제 확인
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetLink) return
+    setIsDeleting(true)
+    try {
+      const linkRef = doc(db, "users", "anonymous", "links", deleteTargetLink.id)
+      await deleteDoc(linkRef)
+      setLinks((prev) => prev.filter((l) => l.id !== deleteTargetLink.id))
+      setDeleteTargetLink(null)
+    } catch (error) {
+      console.error("Error deleting document: ", error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -170,7 +241,7 @@ export default function Page() {
 
           <div className="group relative inline-flex items-center justify-center mt-3 cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors max-w-full">
             <p className="text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed max-w-sm text-center">
-              시니어 프론트엔드 엔지니어 & 크리에이터. 혁신적인 UI/UX와 생산성 도구에 관심이 많습니다.
+              시니어 프론트엔드 엔지니어 &amp; 크리에이터. 혁신적인 UI/UX와 생산성 도구에 관심이 많습니다.
             </p>
             <PenLine className="w-4 h-4 absolute -right-6 top-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </div>
@@ -239,45 +310,135 @@ export default function Page() {
             </DialogContent>
           </Dialog>
 
+          {/* Link Cards */}
           {activeLinks.map((link) => (
             <div key={link.id} className="group relative w-full">
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl z-10"
-              >
-                {/* Glow Background Effect for Card */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-purple-500/40 to-blue-500/40 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
-                
-                <Card className="glass-panel overflow-hidden relative group-hover:-translate-y-0.5 transition-transform duration-300 rounded-2xl border border-slate-200/50 dark:border-white/5">
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 shrink-0 group-hover:scale-110 group-hover:text-primary transition-all duration-300 shadow-inner overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={`https://s2.googleusercontent.com/s2/favicons?domain=${getDomain(link.url)}&sz=32`}
-                        alt={`${link.title} icon`}
-                        className="w-5 h-5 object-contain"
-                      />
-                    </div>
-                    <div className="flex flex-col flex-1 text-left pr-12">
-                      <span className="font-bold text-[16px] text-slate-900 dark:text-zinc-100 tracking-tight">
-                        {link.title}
-                      </span>
-                      <span className="text-[13px] font-medium text-slate-500 dark:text-zinc-400 truncate max-w-[200px] mt-0.5 flex items-center gap-1">
-                        {getDomain(link.url)}
-                      </span>
-                    </div>
+              {editingLinkId === link.id ? (
+                /* ─── 인라인 편집 UI ─── */
+                <Card className="glass-panel overflow-hidden relative rounded-2xl border border-primary/40 dark:border-primary/30 shadow-lg">
+                  <CardContent className="p-4">
+                    <form onSubmit={handleSubmitEdit(onEditSubmit)} noValidate>
+                      <div className="flex flex-col gap-3">
+                        {/* 타이틀 입력 */}
+                        <div className="flex flex-col gap-1">
+                          <Label htmlFor={`edit-title-${link.id}`} className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wide">
+                            타이틀
+                          </Label>
+                          <Input
+                            id={`edit-title-${link.id}`}
+                            placeholder="예: 내 포트폴리오"
+                            autoFocus
+                            {...registerEdit("title")}
+                          />
+                          {editErrors.title && (
+                            <span className="text-xs text-red-500 font-medium ml-1">
+                              {editErrors.title.message}
+                            </span>
+                          )}
+                        </div>
+                        {/* URL 입력 */}
+                        <div className="flex flex-col gap-1">
+                          <Label htmlFor={`edit-url-${link.id}`} className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wide">
+                            URL 주소
+                          </Label>
+                          <Input
+                            id={`edit-url-${link.id}`}
+                            type="url"
+                            placeholder="https://example.com"
+                            {...registerEdit("url")}
+                          />
+                          {editErrors.url && (
+                            <span className="text-xs text-red-500 font-medium ml-1">
+                              {editErrors.url.message}
+                            </span>
+                          )}
+                        </div>
+                        {/* 액션 버튼 */}
+                        <div className="flex justify-end gap-2 pt-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleEditCancel}
+                            disabled={isSaving}
+                            className="gap-1.5 text-slate-500"
+                          >
+                            <X className="w-4 h-4" />
+                            취소
+                          </Button>
+                          <Button
+                            type="submit"
+                            size="sm"
+                            disabled={isSaving}
+                            className="gap-1.5"
+                          >
+                            {isSaving ? (
+                              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" />
+                                저장
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </form>
                   </CardContent>
                 </Card>
-              </a>
-              {/* PRD: 인라인 편집 가시성을 위한 액션 버튼 */}
-               <button 
-                 className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden sm:flex p-2.5 rounded-xl glass-panel bg-white/80 dark:bg-zinc-900/80 text-slate-400 hover:text-primary transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 duration-300 hover:shadow-md" 
-                 aria-label={`Edit ${link.title}`}
-               >
-                 <PenLine className="w-5 h-5" />
-               </button>
+              ) : (
+                /* ─── 일반 링크 카드 ─── */
+                <>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl z-10"
+                  >
+                    {/* Glow Background Effect for Card */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-purple-500/40 to-blue-500/40 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
+                    
+                    <Card className="glass-panel overflow-hidden relative group-hover:-translate-y-0.5 transition-transform duration-300 rounded-2xl border border-slate-200/50 dark:border-white/5">
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 shrink-0 group-hover:scale-110 group-hover:text-primary transition-all duration-300 shadow-inner overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={`https://s2.googleusercontent.com/s2/favicons?domain=${getDomain(link.url)}&sz=32`}
+                            alt={`${link.title} icon`}
+                            className="w-5 h-5 object-contain"
+                          />
+                        </div>
+                        <div className="flex flex-col flex-1 text-left pr-24">
+                          <span className="font-bold text-[16px] text-slate-900 dark:text-zinc-100 tracking-tight">
+                            {link.title}
+                          </span>
+                          <span className="text-[13px] font-medium text-slate-500 dark:text-zinc-400 truncate max-w-[200px] mt-0.5 flex items-center gap-1">
+                            {getDomain(link.url)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </a>
+
+                  {/* 수정 / 삭제 버튼 */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                    <button
+                      onClick={() => handleEditStart(link)}
+                      className="p-2.5 rounded-xl glass-panel bg-white/80 dark:bg-zinc-900/80 text-slate-400 hover:text-primary hover:shadow-md transition-all"
+                      aria-label={`${link.title} 수정`}
+                    >
+                      <PenLine className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTargetLink(link)}
+                      className="p-2.5 rounded-xl glass-panel bg-white/80 dark:bg-zinc-900/80 text-slate-400 hover:text-red-500 hover:shadow-md transition-all"
+                      aria-label={`${link.title} 삭제`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -292,6 +453,66 @@ export default function Page() {
         </div>
         
       </div>
+
+      {/* ─── 삭제 확인 모달 ─── */}
+      <Dialog open={!!deleteTargetLink} onOpenChange={(open) => { if (!open) setDeleteTargetLink(null) }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">정말 삭제하시겠습니까?</DialogTitle>
+            <DialogDescription>
+              아래 링크를 삭제하려고 합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            {deleteTargetLink && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://s2.googleusercontent.com/s2/favicons?domain=${getDomain(deleteTargetLink.url)}&sz=32`}
+                  alt=""
+                  className="w-5 h-5 object-contain shrink-0"
+                />
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-[15px] text-slate-900 dark:text-zinc-100 truncate">
+                    {deleteTargetLink.title}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                    {getDomain(deleteTargetLink.url)}
+                  </span>
+                </div>
+              </div>
+            )}
+            <p className="text-sm font-semibold text-red-500 flex items-center gap-1.5">
+              <span>⚠</span>
+              이 작업은 되돌릴 수 없습니다.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2 mt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTargetLink(null)}
+              disabled={isDeleting}
+            >
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="gap-1.5"
+            >
+              {isDeleting ? (
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  삭제하기
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
