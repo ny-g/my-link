@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc } from "firebase/firestore"
+import { collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 
@@ -147,6 +147,7 @@ export default function Page() {
       await updateDoc(linkRef, {
         title: data.title,
         url: data.url,
+        updatedAt: serverTimestamp(),
       })
       setLinks((prev) =>
         prev.map((l) =>
