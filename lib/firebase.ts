@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,6 +15,8 @@ const firebaseConfig = {
 // Next.js에서 핫 리로드 시 여러 번 초기화되는 것을 방지합니다.
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
+const db = getFirestore(app);
+
 let analytics = null;
 if (typeof window !== "undefined") {
   isSupported().then((supported) => {
@@ -23,4 +26,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { app, analytics };
+export { app, analytics, db };

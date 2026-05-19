@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { dummyLinks, LinkItem } from "@/data/links"
+import { LinkItem } from "@/data/links"
 import { Card, CardContent } from "@/components/ui/card"
 import { Camera, Video, BookOpen, Code, Briefcase, Link as LinkIcon, Share2, PenLine, Terminal, CheckCircle2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 // URL이나 타이틀에 맞는 대체 아이콘 반환 함수
 const getIconForLink = (title: string, url: string) => {
   const lowerTitle = title.toLowerCase()
@@ -48,8 +50,29 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 export default function Page() {
-  const [links, setLinks] = useState<LinkItem[]>(dummyLinks)
+  const [links, setLinks] = useState<LinkItem[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchLinks = async () => {
+      try {
+        const q = query(collection(db, "users", "anonymous", "links"), orderBy("order", "asc"))
+        const querySnapshot = await getDocs(q)
+        const fetchedLinks: LinkItem[] = []
+        querySnapshot.forEach((doc) => {
+          fetchedLinks.push({ id: doc.id, ...doc.data() } as LinkItem)
+        })
+        setLinks(fetchedLinks)
+      } catch (error) {
+        console.error("Error fetching links: ", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchLinks()
+  }, [])
 
   const {
     register,
@@ -71,18 +94,28 @@ export default function Page() {
     }
   }
 
-  const onSubmit = (data: FormValues) => {
-    const newLink: LinkItem = {
-      id: Date.now().toString(),
-      title: data.title,
-      url: data.url,
-      isActive: true,
-      order: links.length,
-    }
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const newLinkData = {
+        title: data.title,
+        url: data.url,
+        isActive: true,
+        order: links.length,
+      }
 
-    setLinks([...links, newLink])
-    reset()
-    setIsAddDialogOpen(false)
+      const docRef = await addDoc(collection(db, "users", "anonymous", "links"), newLinkData)
+
+      const newLink: LinkItem = {
+        id: docRef.id,
+        ...newLinkData,
+      }
+
+      setLinks([...links, newLink])
+      reset()
+      setIsAddDialogOpen(false)
+    } catch (error) {
+      console.error("Error adding document: ", error)
+    }
   }
 
   const activeLinks = links
