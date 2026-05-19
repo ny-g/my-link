@@ -21,18 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-// URL이나 타이틀에 맞는 대체 아이콘 반환 함수
-const getIconForLink = (title: string, url: string) => {
-  const lowerTitle = title.toLowerCase()
-  const lowerUrl = url.toLowerCase()
-  
-  if (lowerTitle.includes("instagram") || lowerUrl.includes("instagram")) return <Camera className="w-5 h-5" />
-  if (lowerTitle.includes("youtube") || lowerUrl.includes("youtube")) return <Video className="w-5 h-5" />
-  if (lowerTitle.includes("blog") || lowerUrl.includes("blog")) return <BookOpen className="w-5 h-5" />
-  if (lowerTitle.includes("github") || lowerUrl.includes("github")) return <Code className="w-5 h-5" />
-  if (lowerTitle.includes("portfolio") || lowerUrl.includes("portfolio")) return <Briefcase className="w-5 h-5" />
-  return <LinkIcon className="w-5 h-5" />
-}
+
 
 const getDomain = (url: string) => {
   try {
@@ -263,8 +252,13 @@ export default function Page() {
                 
                 <Card className="glass-panel overflow-hidden relative group-hover:-translate-y-0.5 transition-transform duration-300 rounded-2xl border border-slate-200/50 dark:border-white/5">
                   <CardContent className="p-4 flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 shrink-0 group-hover:scale-110 group-hover:text-primary transition-all duration-300 shadow-inner">
-                      {getIconForLink(link.title, link.url)}
+                    <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 shrink-0 group-hover:scale-110 group-hover:text-primary transition-all duration-300 shadow-inner overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={`https://s2.googleusercontent.com/s2/favicons?domain=${getDomain(link.url)}&sz=32`}
+                        alt={`${link.title} icon`}
+                        className="w-5 h-5 object-contain"
+                      />
                     </div>
                     <div className="flex flex-col flex-1 text-left pr-12">
                       <span className="font-bold text-[16px] text-slate-900 dark:text-zinc-100 tracking-tight">
