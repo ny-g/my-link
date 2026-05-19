@@ -1,7 +1,24 @@
-import { dummyLinks } from "@/data/links"
-import { Card, CardContent } from "@/components/ui/card"
-import { Camera, Video, BookOpen, Code, Briefcase, Link as LinkIcon, Share2, PenLine, Terminal, CheckCircle2 } from "lucide-react"
+"use client"
 
+import { useState } from "react"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { dummyLinks, LinkItem } from "@/data/links"
+import { Card, CardContent } from "@/components/ui/card"
+import { Camera, Video, BookOpen, Code, Briefcase, Link as LinkIcon, Share2, PenLine, Terminal, CheckCircle2, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 // URL이나 타이틀에 맞는 대체 아이콘 반환 함수
 const getIconForLink = (title: string, url: string) => {
   const lowerTitle = title.toLowerCase()
@@ -23,8 +40,52 @@ const getDomain = (url: string) => {
   }
 }
 
+const formSchema = z.object({
+  title: z.string().min(1, { message: "타이틀을 입력해주세요." }),
+  url: z.string().min(1, { message: "URL 주소를 입력해주세요." }).url({ message: "유효한 URL 형식이 아닙니다. (예: https://example.com)" }),
+})
+
+type FormValues = z.infer<typeof formSchema>
+
 export default function Page() {
-  const activeLinks = dummyLinks
+  const [links, setLinks] = useState<LinkItem[]>(dummyLinks)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      url: "",
+    },
+  })
+
+  const handleOpenChange = (open: boolean) => {
+    setIsAddDialogOpen(open)
+    if (!open) {
+      reset()
+    }
+  }
+
+  const onSubmit = (data: FormValues) => {
+    const newLink: LinkItem = {
+      id: Date.now().toString(),
+      title: data.title,
+      url: data.url,
+      isActive: true,
+      order: links.length,
+    }
+
+    setLinks([...links, newLink])
+    reset()
+    setIsAddDialogOpen(false)
+  }
+
+  const activeLinks = links
     .filter((link) => link.isActive)
     .sort((a, b) => a.order - b.order)
 
@@ -95,6 +156,67 @@ export default function Page() {
 
         {/* Links Container */}
         <div className="flex flex-col gap-4 w-full mt-2">
+          {/* Add Link Button & Dialog */}
+          <Dialog open={isAddDialogOpen} onOpenChange={handleOpenChange}>
+            <DialogTrigger className="w-full py-4 mb-2 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-800 text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:border-slate-400 dark:hover:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-all flex flex-col items-center justify-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-zinc-700 transition-colors shadow-sm">
+                <Plus className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-semibold">새 링크 추가하기</span>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>새 링크 추가</DialogTitle>
+                <DialogDescription>
+                  프로필에 표시할 새로운 링크 정보를 입력하세요.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="title" className="text-right">
+                      타이틀
+                    </Label>
+                    <div className="col-span-3 flex flex-col gap-1">
+                      <Input
+                        id="title"
+                        placeholder="예: 내 포트폴리오"
+                        {...register("title")}
+                      />
+                      {errors.title && (
+                        <span className="text-xs text-red-500 font-medium ml-1">
+                          {errors.title.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="url" className="text-right">
+                      URL 주소
+                    </Label>
+                    <div className="col-span-3 flex flex-col gap-1">
+                      <Input
+                        id="url"
+                        type="url"
+                        placeholder="https://example.com"
+                        {...register("url")}
+                      />
+                      {errors.url && (
+                        <span className="text-xs text-red-500 font-medium ml-1">
+                          {errors.url.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>취소</Button>
+                  <Button type="submit">추가하기</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           {activeLinks.map((link) => (
             <div key={link.id} className="group relative w-full">
               <a
