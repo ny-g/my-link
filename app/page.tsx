@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { LinkItem } from "@/data/links"
 import { Card, CardContent } from "@/components/ui/card"
-import { PenLine, Terminal, CheckCircle2, Plus, Share2, Trash2, Check, X } from "lucide-react"
+import { PenLine, Terminal, CheckCircle2, Plus, Trash2, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { useAuth } from "@/hooks/useAuth"
 
 
 const getDomain = (url: string) => {
@@ -39,6 +40,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 export default function Page() {
+  const { user, userProfile, loading, loginWithGoogle } = useAuth()
   const [links, setLinks] = useState<LinkItem[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -49,8 +51,14 @@ export default function Page() {
 
   useEffect(() => {
     const fetchLinks = async () => {
+      if (!user) {
+        setLinks([])
+        setIsLoading(false)
+        return
+      }
       try {
-        const q = query(collection(db, "users", "anonymous", "links"), orderBy("order", "asc"))
+        setIsLoading(true)
+        const q = query(collection(db, "users", user.uid, "links"), orderBy("order", "asc"))
         const querySnapshot = await getDocs(q)
         const fetchedLinks: LinkItem[] = []
         querySnapshot.forEach((docSnap) => {
@@ -65,7 +73,7 @@ export default function Page() {
     }
 
     fetchLinks()
-  }, [])
+  }, [user])
 
   // 링크 추가 폼
   const {
@@ -111,7 +119,9 @@ export default function Page() {
         order: links.length,
       }
 
-      const docRef = await addDoc(collection(db, "users", "anonymous", "links"), newLinkData)
+      if (!user) return
+
+      const docRef = await addDoc(collection(db, "users", user.uid, "links"), newLinkData)
 
       const newLink: LinkItem = {
         id: docRef.id,
@@ -140,10 +150,10 @@ export default function Page() {
 
   // 수정 저장
   const onEditSubmit = async (data: FormValues) => {
-    if (!editingLinkId) return
+    if (!editingLinkId || !user) return
     setIsSaving(true)
     try {
-      const linkRef = doc(db, "users", "anonymous", "links", editingLinkId)
+      const linkRef = doc(db, "users", user.uid, "links", editingLinkId)
       await updateDoc(linkRef, {
         title: data.title,
         url: data.url,
@@ -165,10 +175,10 @@ export default function Page() {
 
   // 삭제 확인
   const handleDeleteConfirm = async () => {
-    if (!deleteTargetLink) return
+    if (!deleteTargetLink || !user) return
     setIsDeleting(true)
     try {
-      const linkRef = doc(db, "users", "anonymous", "links", deleteTargetLink.id)
+      const linkRef = doc(db, "users", user.uid, "links", deleteTargetLink.id)
       await deleteDoc(linkRef)
       setLinks((prev) => prev.filter((l) => l.id !== deleteTargetLink.id))
       setDeleteTargetLink(null)
@@ -183,8 +193,33 @@ export default function Page() {
     .filter((link) => link.isActive)
     .sort((a, b) => a.order - b.order)
 
+  if (loading || isLoading) {
+    return (
+      <div className="min-h-[calc(100svh-64px)] w-full flex items-center justify-center bg-slate-50 dark:bg-[#09090b]">
+        <span className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="relative min-h-[calc(100svh-64px)] w-full flex flex-col items-center justify-center py-16 px-4 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden text-center">
+        <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white mb-6">
+          나만의 모든 링크를 한 곳에
+        </h1>
+        <p className="text-lg text-slate-600 dark:text-zinc-400 mb-8 max-w-md">
+          다양한 채널을 운영하는 당신을 위해.<br/>
+          MyLink로 마이페이지에 모든 것을 담아보세요.
+        </p>
+        <Button onClick={loginWithGoogle} size="lg" className="rounded-full px-8 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all">
+          구글로 로그인하고 마이페이지 만들기
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <div className="relative min-h-svh w-full flex flex-col items-center py-16 px-4 sm:p-12 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden">
+    <div className="relative min-h-[calc(100svh-64px)] w-full flex flex-col items-center py-16 px-4 sm:p-12 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden">
       
       {/* Animated Grid Background */}
       <div className="fixed inset-0 z-0 pointer-events-none flex justify-center">
@@ -197,13 +232,7 @@ export default function Page() {
       {/* Main Content Area */}
       <div className="relative z-10 w-full max-w-[480px] flex flex-col gap-8">
         
-        {/* Top actions */}
-        <div className="flex justify-end w-full">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full glass-panel text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary text-sm font-medium" aria-label="Share Profile">
-            <Share2 className="w-4 h-4" />
-            <span>Share</span>
-          </button>
-        </div>
+
 
         {/* Profile Card */}
         <div className="flex flex-col items-center justify-center text-center px-4 mt-4">
@@ -212,7 +241,12 @@ export default function Page() {
             <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-primary via-blue-500 to-purple-600 opacity-70 blur-md group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
             {/* Avatar Container */}
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-100 dark:bg-zinc-900 border-[3px] border-white dark:border-zinc-950 flex items-center justify-center overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-[1.02] z-10">
-               <span className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-slate-700 to-slate-400 dark:from-white dark:to-zinc-500 select-none">ML</span>
+               {userProfile?.photoURL ? (
+                 /* eslint-disable-next-line @next/next/no-img-element */
+                 <img src={userProfile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+               ) : (
+                 <span className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-slate-700 to-slate-400 dark:from-white dark:to-zinc-500 select-none">ML</span>
+               )}
                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
                  <PenLine className="w-7 h-7 text-white" />
                </div>
@@ -223,7 +257,7 @@ export default function Page() {
           
           <div className="group relative inline-flex items-center justify-center cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
-              MyLink User
+              {userProfile?.displayName || "MyLink User"}
             </h1>
             <PenLine className="w-5 h-5 absolute -right-8 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
@@ -242,7 +276,7 @@ export default function Page() {
 
           <div className="group relative inline-flex items-center justify-center mt-3 cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors max-w-full">
             <p className="text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed max-w-sm text-center">
-              시니어 프론트엔드 엔지니어 &amp; 크리에이터. 혁신적인 UI/UX와 생산성 도구에 관심이 많습니다.
+              {userProfile?.bio || "소개글이 없습니다."}
             </p>
             <PenLine className="w-4 h-4 absolute -right-6 top-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </div>
