@@ -30,9 +30,9 @@ export function Header() {
     <header className="sticky top-0 z-[200] w-full border-b border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 sm:px-8 max-w-5xl mx-auto">
         <div className="flex items-center gap-2">
-          <span className="font-black text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+          <Link href="/" className="font-black text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 hover:opacity-80 transition-opacity">
             MyLink
-          </span>
+          </Link>
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4">
@@ -86,7 +86,7 @@ export function Header() {
                   </Menu.Trigger>
                   
                   <Menu.Portal>
-                    <Menu.Positioner align="end" sideOffset={8}>
+                    <Menu.Positioner align="end" sideOffset={8} className="z-[9999]">
                       <Menu.Popup className="z-[9999] w-64 rounded-2xl bg-white dark:bg-zinc-900 p-2 shadow-xl ring-1 ring-slate-200 dark:ring-zinc-800 outline-none transform origin-top-right transition-all data-[starting-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:scale-95 data-[ending-style]:opacity-0">
                         
                         {/* Profile Summary Header */}

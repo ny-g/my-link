@@ -227,7 +227,7 @@ export default function Page() {
 
         {/* Profile Card */}
         <div className="flex flex-col items-center justify-center text-center px-4 mt-4">
-          <div className="relative mb-8 group cursor-pointer">
+          <div className="relative mb-8 group">
             {/* Animated Glow Ring */}
             <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-primary via-blue-500 to-purple-600 opacity-70 blur-md group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
             {/* Avatar Container */}
@@ -238,9 +238,6 @@ export default function Page() {
                ) : (
                  <span className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-slate-700 to-slate-400 dark:from-white dark:to-zinc-500 select-none">ML</span>
                )}
-               <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                 <PenLine className="w-7 h-7 text-white" />
-               </div>
             </div>
             {/* Status indicator */}
             <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-white dark:border-zinc-950 rounded-full z-20 shadow-lg"></div>

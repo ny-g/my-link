@@ -80,21 +80,27 @@ export default function StatsPage() {
         </div>
 
         {/* 요약 카드 */}
-        <Card className="glass-panel overflow-hidden border-primary/20 shadow-lg group transition-transform duration-300 hover:-translate-y-0.5">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <MousePointerClick className="w-4 h-4 text-primary" />
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-blue-500 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+          <Card className="relative glass-panel overflow-hidden border-white/20 dark:border-white/5 shadow-2xl transition-transform duration-300 group-hover:-translate-y-1 rounded-2xl bg-white/60 dark:bg-zinc-900/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+                <div className="p-2.5 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors shadow-inner">
+                  <MousePointerClick className="w-4 h-4 text-primary" />
+                </div>
+                전체 누적 클릭 수
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mt-2 text-6xl font-black bg-clip-text text-transparent bg-gradient-to-br from-primary via-blue-500 to-purple-600 drop-shadow-sm">
+                {totalClicks.toLocaleString()}
               </div>
-              총 클릭 수
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-br from-primary via-blue-500 to-purple-600">
-              {totalClicks.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">
+                프로필 내 모든 링크에서 발생한 총 조회수입니다.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* 차트 카드 */}
         <Card className="glass-panel border-slate-200/50 dark:border-white/5 shadow-md">
@@ -109,6 +115,12 @@ export default function StatsPage() {
               <ChartContainer config={chartConfig} className="h-[350px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.2}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
                     <XAxis 
                       dataKey="title" 
@@ -127,7 +139,7 @@ export default function StatsPage() {
                       cursor={{ fill: "currentColor", opacity: 0.05 }} 
                       content={<ChartTooltipContent hideLabel />} 
                     />
-                    <Bar dataKey="clicks" fill="var(--color-clicks)" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="clicks" fill="url(#colorClicks)" radius={[6, 6, 0, 0]}>
                       <LabelList dataKey="clicks" position="top" offset={10} className="fill-slate-900 dark:fill-white text-[11px] font-bold" />
                     </Bar>
                   </BarChart>
