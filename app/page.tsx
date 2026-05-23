@@ -22,7 +22,7 @@ import {
 import { useAuth } from "@/hooks/useAuth"
 import { useProfile } from "@/hooks/useProfile"
 import { useLinks } from "@/hooks/useLinks"
-
+import { LandingPage } from "@/components/landing/LandingPage"
 
 const getDomain = (url: string) => {
   try {
@@ -193,20 +193,7 @@ export default function Page() {
   }
 
   if (!user) {
-    return (
-      <div className="relative min-h-[calc(100svh-64px)] w-full flex flex-col items-center justify-center py-16 px-4 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden text-center">
-        <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white mb-6">
-          나만의 모든 링크를 한 곳에
-        </h1>
-        <p className="text-lg text-slate-600 dark:text-zinc-400 mb-8 max-w-md">
-          다양한 채널을 운영하는 당신을 위해.<br/>
-          MyLink로 마이페이지에 모든 것을 담아보세요.
-        </p>
-        <Button onClick={loginWithGoogle} size="lg" className="rounded-full px-8 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all">
-          구글로 로그인하고 마이페이지 만들기
-        </Button>
-      </div>
-    )
+    return <LandingPage onLogin={loginWithGoogle} />
   }
 
   return (

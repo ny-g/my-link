@@ -38,7 +38,7 @@ export function Header() {
         <div className="flex items-center gap-3 sm:gap-4">
           {!loading && (
             <>
-              {user ? (
+              {user && (
                 <>
                   {userProfile?.displayName && (
                     pathname === "/" ? (
@@ -166,12 +166,6 @@ export function Header() {
                   </Menu.Portal>
                 </Menu.Root>
                 </>
-              ) : (
-                <Button onClick={loginWithGoogle} className="gap-2 rounded-full px-6">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4 bg-white rounded-full p-0.5" />
-                  구글로 시작하기
-                </Button>
               )}
             </>
           )}
