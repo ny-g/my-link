@@ -17,6 +17,14 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return url
+  }
+}
+
 export default function StatsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -53,6 +61,11 @@ export default function StatsPage() {
       title: link.title,
       clicks: link.clicks || 0,
     }));
+
+  // 클릭 수 기준 내림차순 정렬된 링크 목록
+  const sortedLinks = [...links]
+    .filter((link) => link.isActive)
+    .sort((a, b) => (b.clicks || 0) - (a.clicks || 0));
 
   return (
     <div className="relative min-h-[calc(100svh-64px)] w-full flex flex-col items-center py-8 px-4 sm:p-12 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden">
@@ -106,9 +119,6 @@ export default function StatsPage() {
         <Card className="glass-panel border-slate-200/50 dark:border-white/5 shadow-md">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-slate-800 dark:text-zinc-100">링크별 클릭 수</CardTitle>
-            <CardDescription className="text-sm font-medium text-slate-500 dark:text-zinc-400">
-              활성화된 각 링크의 개별 클릭수를 막대 차트로 보여줍니다.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
@@ -147,6 +157,44 @@ export default function StatsPage() {
               </ChartContainer>
             ) : (
               <div className="flex h-[300px] items-center justify-center text-sm font-medium text-slate-500 dark:text-zinc-400">
+                표시할 데이터가 없습니다.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 인기 링크 순위 카드 */}
+        <Card className="glass-panel border-slate-200/50 dark:border-white/5 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold text-slate-800 dark:text-zinc-100">인기 링크 순위</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {sortedLinks.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {sortedLinks.map((link, index) => (
+                  <div key={link.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-100/50 dark:bg-zinc-800/50 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors group/item">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 shadow-sm shrink-0 text-sm font-bold text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800 group-hover/item:text-primary transition-colors">
+                        {index + 1}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-[15px] text-slate-900 dark:text-zinc-100 truncate">
+                          {link.title}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                          {getDomain(link.url)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold text-sm shrink-0 shadow-inner">
+                      <MousePointerClick className="w-4 h-4" />
+                      {link.clicks || 0}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-[150px] items-center justify-center text-sm font-medium text-slate-500 dark:text-zinc-400">
                 표시할 데이터가 없습니다.
               </div>
             )}
