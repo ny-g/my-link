@@ -265,14 +265,16 @@ export default function Page() {
           {/* Username 영역 */}
           {editingField === "username" ? (
             <div className="flex flex-col items-center">
-               <Input 
-                 autoFocus
-                 value={editValue}
-                 onChange={(e) => setEditValue(e.target.value)}
-                 onBlur={handleProfileEditSave}
-                 onKeyDown={handleProfileKeyDown}
-                 className="text-center text-3xl sm:text-4xl font-black w-64 h-12"
-               />
+              <div className="bg-slate-100 dark:bg-zinc-800/50 rounded-lg px-4 py-1 border border-primary/20 focus-within:ring-1 focus-within:ring-primary transition-all">
+                <input 
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={handleProfileEditSave}
+                  onKeyDown={handleProfileKeyDown}
+                  className="bg-transparent border-none outline-none text-center text-3xl sm:text-4xl font-black w-64 h-12 text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
           ) : (
             <div 
@@ -290,8 +292,8 @@ export default function Page() {
           <div className="mt-1 flex items-center justify-center">
             {editingField === "displayName" ? (
               <div className="flex flex-col items-center">
-                <div className="flex items-center text-sm bg-slate-100 dark:bg-zinc-800/50 rounded-md px-2 py-1.5 border border-primary/20">
-                  <span className="text-slate-500">mylink.com/</span>
+                <div className="flex items-center text-sm font-medium bg-slate-100 dark:bg-zinc-800/50 rounded-md px-2 py-1.5 border border-primary/20">
+                  <span className="text-slate-500">@</span>
                   <input 
                     autoFocus
                     value={editValue}
@@ -301,18 +303,18 @@ export default function Page() {
                     }}
                     onBlur={handleProfileEditSave}
                     onKeyDown={handleProfileKeyDown}
-                    className="bg-transparent border-none outline-none w-28 text-primary font-semibold ml-0.5"
+                    className="bg-transparent border-none outline-none w-28 text-slate-500 ml-0.5"
                   />
                 </div>
                 {errorMsg && <span className="text-red-500 text-xs mt-1 font-medium">{errorMsg}</span>}
               </div>
             ) : (
               <div 
-                className="group relative inline-flex items-center text-sm cursor-text hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
+                className="group relative inline-flex items-center text-sm font-medium cursor-text hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
                 onClick={() => handleProfileEditStart("displayName", userProfile?.displayName || "")}
               >
-                <span className="text-slate-500">mylink.com/</span>
-                <span className="text-primary font-semibold">{userProfile?.displayName}</span>
+                <span className="text-slate-500">@</span>
+                <span className="text-slate-500">{userProfile?.displayName}</span>
                 <PenLine className="w-3 h-3 ml-1.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             )}
@@ -333,15 +335,17 @@ export default function Page() {
           {/* Bio 영역 */}
           <div className="mt-3 w-full max-w-sm mx-auto flex justify-center">
             {editingField === "bio" ? (
-              <textarea 
-                 autoFocus
-                 value={editValue}
-                 onChange={(e) => setEditValue(e.target.value)}
-                 onBlur={handleProfileEditSave}
-                 onKeyDown={handleProfileKeyDown}
-                 className="w-full text-center text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed bg-transparent outline-none border-b-2 border-primary/50 focus:border-primary resize-none transition-colors"
-                 rows={3}
-              />
+              <div className="w-full bg-slate-100 dark:bg-zinc-800/50 rounded-md p-2 border border-primary/20 focus-within:ring-1 focus-within:ring-primary transition-all">
+                <textarea 
+                   autoFocus
+                   value={editValue}
+                   onChange={(e) => setEditValue(e.target.value)}
+                   onBlur={handleProfileEditSave}
+                   onKeyDown={handleProfileKeyDown}
+                   className="w-full text-center text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed bg-transparent outline-none resize-none"
+                   rows={2}
+                />
+              </div>
             ) : (
               <div 
                 className="group relative inline-flex items-center justify-center cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors max-w-full"
