@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
-import { LogOut, Copy, ExternalLink, Check, User as UserIcon, Home } from "lucide-react";
+import { LogOut, Copy, ExternalLink, Check, User as UserIcon, Home, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "@base-ui/react/menu";
 
@@ -143,6 +143,14 @@ export function Header() {
                         >
                           <ExternalLink className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
                           퍼블릭 뷰 보기
+                        </Menu.Item>
+                        
+                        <Menu.Item
+                          onClick={() => router.push(`/stats`)}
+                          className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 outline-none cursor-pointer select-none transition-colors mt-1"
+                        >
+                          <BarChart3 className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
+                          통계 보기
                         </Menu.Item>
                         
                         <Menu.Item 
