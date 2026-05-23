@@ -41,7 +41,7 @@ type FormValues = z.infer<typeof formSchema>
 
 export default function Page() {
   const { user, loading, loginWithGoogle } = useAuth()
-  const { userProfile, isProfileLoading, updateProfile, checkDisplayNameDuplicate } = useProfile(user)
+  const { userProfile, isProfileLoading, updateProfile } = useProfile(user)
   const { links, isLinksLoading, addLink, updateLink, deleteLink, isAdding, isUpdating, isDeleting } = useLinks(user)
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -49,7 +49,7 @@ export default function Page() {
   const [deleteTargetLink, setDeleteTargetLink] = useState<LinkItem | null>(null)
   
   // Profile Inline Edit State
-  const [editingField, setEditingField] = useState<"username" | "displayName" | "bio" | null>(null)
+  const [editingField, setEditingField] = useState<"username" | "bio" | null>(null)
   const [editValue, setEditValue] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
 
@@ -89,7 +89,7 @@ export default function Page() {
   }
 
   // Profile Edit Handlers
-  const handleProfileEditStart = (field: "username" | "displayName" | "bio", currentValue: string) => {
+  const handleProfileEditStart = (field: "username" | "bio", currentValue: string) => {
     setEditingField(field)
     setEditValue(currentValue)
     setErrorMsg("")
@@ -110,14 +110,6 @@ export default function Page() {
       return
     }
 
-    // 슬러그(displayName) 변경 시 영문/숫자 검증
-    if (editingField === "displayName") {
-      const slugRegex = /^[a-zA-Z0-9_-]+$/;
-      if (!slugRegex.test(newValue)) {
-         setErrorMsg("영문, 숫자, -, _ 만 사용 가능합니다.");
-         return;
-      }
-    }
 
     const backupValue = currentValue
     const currentField = editingField;
@@ -125,15 +117,7 @@ export default function Page() {
     // UI 낙관적 업데이트를 위해 상태 초기화하고 Mutation 실행
     setEditingField(null)
     
-    // displayName은 추가로 중복 체크 수행
-    if (currentField === "displayName") {
-      const isDuplicate = await checkDisplayNameDuplicate(newValue)
-      if (isDuplicate) {
-        alert("이미 사용 중인 링크입니다. 이전 이름으로 돌아갑니다.")
-        return
-      }
-    }
-    
+
     try {
       await updateProfile({ [currentField]: newValue })
     } catch (err) {
@@ -290,34 +274,10 @@ export default function Page() {
 
           {/* DisplayName (URL Slug) 영역 */}
           <div className="mt-1 flex items-center justify-center">
-            {editingField === "displayName" ? (
-              <div className="flex flex-col items-center">
-                <div className="flex items-center text-sm font-medium bg-slate-100 dark:bg-zinc-800/50 rounded-md px-2 py-1.5 border border-primary/20">
-                  <span className="text-slate-500">@</span>
-                  <input 
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => {
-                      setEditValue(e.target.value)
-                      setErrorMsg("")
-                    }}
-                    onBlur={handleProfileEditSave}
-                    onKeyDown={handleProfileKeyDown}
-                    className="bg-transparent border-none outline-none w-28 text-slate-500 ml-0.5"
-                  />
-                </div>
-                {errorMsg && <span className="text-red-500 text-xs mt-1 font-medium">{errorMsg}</span>}
-              </div>
-            ) : (
-              <div 
-                className="group relative inline-flex items-center text-sm font-medium cursor-text hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
-                onClick={() => handleProfileEditStart("displayName", userProfile?.displayName || "")}
-              >
-                <span className="text-slate-500">@</span>
-                <span className="text-slate-500">{userProfile?.displayName}</span>
-                <PenLine className="w-3 h-3 ml-1.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            )}
+            <div className="inline-flex items-center text-sm font-medium px-2 py-1 rounded">
+              <span className="text-slate-500">@</span>
+              <span className="text-slate-500">{userProfile?.displayName}</span>
+            </div>
           </div>
           
           {/* Tech/Creator Badges */}

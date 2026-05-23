@@ -81,26 +81,10 @@ export function useProfile(user: any) {
     },
   })
 
-  // 3. 중복 확인 유틸 함수 (Mutation 밖에서 호출용)
-  const checkDisplayNameDuplicate = async (displayName: string) => {
-    if (!user) return false
-    try {
-      const usersRef = collection(db, "users")
-      const q = query(usersRef, where("displayName", "==", displayName))
-      const querySnapshot = await getDocs(q)
-      
-      const duplicateDocs = querySnapshot.docs.filter((docSnap) => docSnap.id !== user.uid)
-      return duplicateDocs.length > 0
-    } catch (error) {
-      console.error("Error checking display name duplicate:", error)
-      return true // 에러 시 방어적으로 중복 처리
-    }
-  }
 
   return {
     userProfile,
     isProfileLoading,
     updateProfile: updateProfileMutation.mutateAsync,
-    checkDisplayNameDuplicate,
   }
 }
