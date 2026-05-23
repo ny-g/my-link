@@ -69,13 +69,10 @@ export default function StatsPage() {
 
   return (
     <div className="relative min-h-[calc(100svh-64px)] w-full flex flex-col items-center py-8 px-4 sm:p-12 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden">
-      {/* Animated Grid Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none flex justify-center">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-      </div>
+      {/* Animated Grid Background removed */}
       
       {/* Top Ambient Glow */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 dark:bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-lime-600/15 dark:bg-lime-600/10 blur-[100px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-[720px] flex flex-col gap-6">
         <div className="flex items-center gap-4 mb-4">
@@ -94,7 +91,7 @@ export default function StatsPage() {
 
         {/* 요약 카드 */}
         <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-blue-500 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-lime-600 via-green-600 to-emerald-700 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
           <Card className="relative glass-panel overflow-hidden border-white/20 dark:border-white/5 shadow-2xl transition-transform duration-300 group-hover:-translate-y-1 rounded-2xl bg-white/60 dark:bg-zinc-900/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold text-slate-600 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-2">
@@ -105,7 +102,7 @@ export default function StatsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="mt-2 text-6xl font-black bg-clip-text text-transparent bg-gradient-to-br from-primary via-blue-500 to-purple-600 drop-shadow-sm">
+              <div className="mt-2 text-6xl font-black bg-clip-text text-transparent bg-gradient-to-br from-lime-600 via-green-600 to-emerald-700 drop-shadow-sm">
                 {totalClicks.toLocaleString()}
               </div>
               <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">

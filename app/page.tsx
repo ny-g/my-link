@@ -212,13 +212,10 @@ export default function Page() {
   return (
     <div className="relative min-h-[calc(100svh-64px)] w-full flex flex-col items-center py-16 px-4 sm:p-12 bg-slate-50 dark:bg-[#09090b] selection:bg-primary/30 font-sans overflow-hidden">
       
-      {/* Animated Grid Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none flex justify-center">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-      </div>
+      {/* Animated Grid Background removed */}
       
       {/* Top Ambient Glow */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 dark:bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-lime-600/15 dark:bg-lime-600/10 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Main Content Area */}
       <div className="relative z-10 w-full max-w-[480px] flex flex-col gap-8">
@@ -229,7 +226,7 @@ export default function Page() {
         <div className="flex flex-col items-center justify-center text-center px-4 mt-4">
           <div className="relative mb-8 group">
             {/* Animated Glow Ring */}
-            <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-primary via-blue-500 to-purple-600 opacity-70 blur-md group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+            <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-lime-600 via-green-600 to-emerald-700 opacity-70 blur-md group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
             {/* Avatar Container */}
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-100 dark:bg-zinc-900 border-[3px] border-white dark:border-zinc-950 flex items-center justify-center overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-[1.02] z-10">
                {userProfile?.photoURL ? (
@@ -466,7 +463,7 @@ export default function Page() {
                     className="block w-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl z-10"
                   >
                     {/* Glow Background Effect for Card */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-purple-500/40 to-blue-500/40 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-lime-600/40 via-green-600/40 to-emerald-700/40 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
                     
                     <Card className="glass-panel overflow-hidden relative group-hover:-translate-y-0.5 transition-transform duration-300 rounded-2xl border border-slate-200/50 dark:border-white/5">
                       <CardContent className="p-4 flex items-center gap-4">
