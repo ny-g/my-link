@@ -208,15 +208,6 @@ export default function PublicProfilePage() {
             ))
           )}
         </div>
-
-        {/* Footer */}
-        <div className="mt-12 text-center pb-8">
-          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full glass-panel">
-            <p className="text-[11px] font-bold tracking-widest uppercase text-slate-500 dark:text-zinc-500">
-              Powered by <span className="text-slate-900 dark:text-zinc-300">MyLink</span>
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   )
