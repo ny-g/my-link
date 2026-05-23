@@ -19,9 +19,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore"
-import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/useAuth"
+import { useProfile } from "@/hooks/useProfile"
+import { useLinks } from "@/hooks/useLinks"
 
 
 const getDomain = (url: string) => {
@@ -40,40 +40,18 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 export default function Page() {
-  const { user, userProfile, loading, loginWithGoogle } = useAuth()
-  const [links, setLinks] = useState<LinkItem[]>([])
+  const { user, loading, loginWithGoogle } = useAuth()
+  const { userProfile, isProfileLoading, updateProfile, checkDisplayNameDuplicate } = useProfile(user)
+  const { links, isLinksLoading, addLink, updateLink, deleteLink, isAdding, isUpdating, isDeleting } = useLinks(user)
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
   const [deleteTargetLink, setDeleteTargetLink] = useState<LinkItem | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-
-  useEffect(() => {
-    const fetchLinks = async () => {
-      if (!user) {
-        setLinks([])
-        setIsLoading(false)
-        return
-      }
-      try {
-        setIsLoading(true)
-        const q = query(collection(db, "users", user.uid, "links"), orderBy("order", "asc"))
-        const querySnapshot = await getDocs(q)
-        const fetchedLinks: LinkItem[] = []
-        querySnapshot.forEach((docSnap) => {
-          fetchedLinks.push({ id: docSnap.id, ...docSnap.data() } as LinkItem)
-        })
-        setLinks(fetchedLinks)
-      } catch (error) {
-        console.error("Error fetching links: ", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchLinks()
-  }, [user])
+  
+  // Profile Inline Edit State
+  const [editingField, setEditingField] = useState<"username" | "displayName" | "bio" | null>(null)
+  const [editValue, setEditValue] = useState("")
+  const [errorMsg, setErrorMsg] = useState("")
 
   // 링크 추가 폼
   const {
@@ -110,25 +88,72 @@ export default function Page() {
     }
   }
 
+  // Profile Edit Handlers
+  const handleProfileEditStart = (field: "username" | "displayName" | "bio", currentValue: string) => {
+    setEditingField(field)
+    setEditValue(currentValue)
+    setErrorMsg("")
+  }
+
+  const handleProfileEditSave = async () => {
+    if (!editingField || !userProfile || !user) {
+      setEditingField(null)
+      return
+    }
+
+    const currentValue = userProfile[editingField]
+    const newValue = editValue.trim()
+
+    // 변경사항이 없거나 비어있으면(bio 제외) 원래대로 복구
+    if (currentValue === newValue || (editingField !== "bio" && newValue === "")) {
+      setEditingField(null)
+      return
+    }
+
+    // 슬러그(displayName) 변경 시 영문/숫자 검증
+    if (editingField === "displayName") {
+      const slugRegex = /^[a-zA-Z0-9_-]+$/;
+      if (!slugRegex.test(newValue)) {
+         setErrorMsg("영문, 숫자, -, _ 만 사용 가능합니다.");
+         return;
+      }
+    }
+
+    const backupValue = currentValue
+    const currentField = editingField;
+    
+    // UI 낙관적 업데이트를 위해 상태 초기화하고 Mutation 실행
+    setEditingField(null)
+    
+    // displayName은 추가로 중복 체크 수행
+    if (currentField === "displayName") {
+      const isDuplicate = await checkDisplayNameDuplicate(newValue)
+      if (isDuplicate) {
+        alert("이미 사용 중인 링크입니다. 이전 이름으로 돌아갑니다.")
+        return
+      }
+    }
+    
+    try {
+      await updateProfile({ [currentField]: newValue })
+    } catch (err) {
+      // 에러 처리는 useProfile의 onError 롤백에 위임됨
+    }
+  }
+
+  const handleProfileKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleProfileEditSave()
+    } else if (e.key === "Escape") {
+      setEditingField(null)
+      setErrorMsg("")
+    }
+  }
+
   const onSubmit = async (data: FormValues) => {
     try {
-      const newLinkData = {
-        title: data.title,
-        url: data.url,
-        isActive: true,
-        order: links.length,
-      }
-
-      if (!user) return
-
-      const docRef = await addDoc(collection(db, "users", user.uid, "links"), newLinkData)
-
-      const newLink: LinkItem = {
-        id: docRef.id,
-        ...newLinkData,
-      }
-
-      setLinks([...links, newLink])
+      await addLink({ title: data.title, url: data.url, order: links.length })
       reset()
       setIsAddDialogOpen(false)
     } catch (error) {
@@ -151,41 +176,23 @@ export default function Page() {
   // 수정 저장
   const onEditSubmit = async (data: FormValues) => {
     if (!editingLinkId || !user) return
-    setIsSaving(true)
     try {
-      const linkRef = doc(db, "users", user.uid, "links", editingLinkId)
-      await updateDoc(linkRef, {
-        title: data.title,
-        url: data.url,
-        updatedAt: serverTimestamp(),
-      })
-      setLinks((prev) =>
-        prev.map((l) =>
-          l.id === editingLinkId ? { ...l, title: data.title, url: data.url } : l
-        )
-      )
+      await updateLink({ id: editingLinkId, title: data.title, url: data.url })
       setEditingLinkId(null)
       resetEdit()
     } catch (error) {
       console.error("Error updating document: ", error)
-    } finally {
-      setIsSaving(false)
     }
   }
 
   // 삭제 확인
   const handleDeleteConfirm = async () => {
     if (!deleteTargetLink || !user) return
-    setIsDeleting(true)
     try {
-      const linkRef = doc(db, "users", user.uid, "links", deleteTargetLink.id)
-      await deleteDoc(linkRef)
-      setLinks((prev) => prev.filter((l) => l.id !== deleteTargetLink.id))
+      await deleteLink(deleteTargetLink.id)
       setDeleteTargetLink(null)
     } catch (error) {
       console.error("Error deleting document: ", error)
-    } finally {
-      setIsDeleting(false)
     }
   }
 
@@ -193,7 +200,7 @@ export default function Page() {
     .filter((link) => link.isActive)
     .sort((a, b) => a.order - b.order)
 
-  if (loading || isLoading) {
+  if (loading || isProfileLoading || isLinksLoading) {
     return (
       <div className="min-h-[calc(100svh-64px)] w-full flex items-center justify-center bg-slate-50 dark:bg-[#09090b]">
         <span className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -255,11 +262,60 @@ export default function Page() {
             <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-white dark:border-zinc-950 rounded-full z-20 shadow-lg"></div>
           </div>
           
-          <div className="group relative inline-flex items-center justify-center cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
-              {userProfile?.displayName || "MyLink User"}
-            </h1>
-            <PenLine className="w-5 h-5 absolute -right-8 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          {/* Username 영역 */}
+          {editingField === "username" ? (
+            <div className="flex flex-col items-center">
+               <Input 
+                 autoFocus
+                 value={editValue}
+                 onChange={(e) => setEditValue(e.target.value)}
+                 onBlur={handleProfileEditSave}
+                 onKeyDown={handleProfileKeyDown}
+                 className="text-center text-3xl sm:text-4xl font-black w-64 h-12"
+               />
+            </div>
+          ) : (
+            <div 
+              className="group relative inline-flex items-center justify-center cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              onClick={() => handleProfileEditStart("username", userProfile?.username || userProfile?.displayName || "MyLink User")}
+            >
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                {userProfile?.username || userProfile?.displayName || "MyLink User"}
+              </h1>
+              <PenLine className="w-5 h-5 absolute -right-8 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          )}
+
+          {/* DisplayName (URL Slug) 영역 */}
+          <div className="mt-1 flex items-center justify-center">
+            {editingField === "displayName" ? (
+              <div className="flex flex-col items-center">
+                <div className="flex items-center text-sm bg-slate-100 dark:bg-zinc-800/50 rounded-md px-2 py-1.5 border border-primary/20">
+                  <span className="text-slate-500">mylink.com/</span>
+                  <input 
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => {
+                      setEditValue(e.target.value)
+                      setErrorMsg("")
+                    }}
+                    onBlur={handleProfileEditSave}
+                    onKeyDown={handleProfileKeyDown}
+                    className="bg-transparent border-none outline-none w-28 text-primary font-semibold ml-0.5"
+                  />
+                </div>
+                {errorMsg && <span className="text-red-500 text-xs mt-1 font-medium">{errorMsg}</span>}
+              </div>
+            ) : (
+              <div 
+                className="group relative inline-flex items-center text-sm cursor-text hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
+                onClick={() => handleProfileEditStart("displayName", userProfile?.displayName || "")}
+              >
+                <span className="text-slate-500">mylink.com/</span>
+                <span className="text-primary font-semibold">{userProfile?.displayName}</span>
+                <PenLine className="w-3 h-3 ml-1.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            )}
           </div>
           
           {/* Tech/Creator Badges */}
@@ -274,11 +330,29 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="group relative inline-flex items-center justify-center mt-3 cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors max-w-full">
-            <p className="text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed max-w-sm text-center">
-              {userProfile?.bio || "소개글이 없습니다."}
-            </p>
-            <PenLine className="w-4 h-4 absolute -right-6 top-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          {/* Bio 영역 */}
+          <div className="mt-3 w-full max-w-sm mx-auto flex justify-center">
+            {editingField === "bio" ? (
+              <textarea 
+                 autoFocus
+                 value={editValue}
+                 onChange={(e) => setEditValue(e.target.value)}
+                 onBlur={handleProfileEditSave}
+                 onKeyDown={handleProfileKeyDown}
+                 className="w-full text-center text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed bg-transparent outline-none border-b-2 border-primary/50 focus:border-primary resize-none transition-colors"
+                 rows={3}
+              />
+            ) : (
+              <div 
+                className="group relative inline-flex items-center justify-center cursor-text p-2 -m-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors max-w-full"
+                onClick={() => handleProfileEditStart("bio", userProfile?.bio || "")}
+              >
+                <p className="text-sm sm:text-[15px] font-medium text-slate-600 dark:text-zinc-400 leading-relaxed text-center">
+                  {userProfile?.bio || "소개글이 없습니다."}
+                </p>
+                <PenLine className="w-4 h-4 absolute -right-6 top-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -395,7 +469,7 @@ export default function Page() {
                             variant="ghost"
                             size="sm"
                             onClick={handleEditCancel}
-                            disabled={isSaving}
+                            disabled={isUpdating}
                             className="gap-1.5 text-slate-500"
                           >
                             <X className="w-4 h-4" />
@@ -404,10 +478,10 @@ export default function Page() {
                           <Button
                             type="submit"
                             size="sm"
-                            disabled={isSaving}
+                            disabled={isUpdating}
                             className="gap-1.5"
                           >
-                            {isSaving ? (
+                            {isUpdating ? (
                               <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                             ) : (
                               <>

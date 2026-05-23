@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { LogOut, Copy, ExternalLink, Check, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "@base-ui/react/menu";
 
 export function Header() {
-  const { user, userProfile, loading, loginWithGoogle, logout } = useAuth();
+  const { user, loading, loginWithGoogle, logout } = useAuth();
+  const { userProfile } = useProfile(user);
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = (e: React.MouseEvent) => {

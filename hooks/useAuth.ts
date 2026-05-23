@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
 
 export interface UserProfile {
+  username: string;
   displayName: string;
   slug: string;
   photoURL: string;
@@ -12,7 +13,6 @@ export interface UserProfile {
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,13 +24,12 @@ export function useAuth() {
           const userDocRef = doc(db, "users", currentUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
-          if (userDocSnap.exists()) {
-            setUserProfile(userDocSnap.data() as UserProfile);
-          } else {
+          if (!userDocSnap.exists()) {
             // 최초 로그인 시 프로필 생성
             const email = currentUser.email || "";
             const slug = email.split("@")[0] || currentUser.uid.slice(0, 8);
             const newProfile: UserProfile = {
+              username: currentUser.displayName || slug,
               displayName: slug,
               slug: slug,
               photoURL: currentUser.photoURL || "",
@@ -41,13 +40,10 @@ export function useAuth() {
               ...newProfile,
               createdAt: serverTimestamp(),
             });
-            setUserProfile(newProfile);
           }
         } catch (error) {
           console.error("Error fetching or creating user profile:", error);
         }
-      } else {
-        setUserProfile(null);
       }
       
       setLoading(false);
@@ -72,5 +68,5 @@ export function useAuth() {
     }
   };
 
-  return { user, userProfile, loading, loginWithGoogle, logout };
+  return { user, loading, loginWithGoogle, logout };
 }
