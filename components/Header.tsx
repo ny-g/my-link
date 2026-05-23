@@ -38,7 +38,7 @@ export function Header() {
         <div className="flex items-center gap-3 sm:gap-4">
           {!loading && (
             <>
-              {user && (
+              {user ? (
                 <>
                   {userProfile?.displayName && (
                     pathname === "/" ? (
@@ -166,6 +166,14 @@ export function Header() {
                   </Menu.Portal>
                 </Menu.Root>
                 </>
+              ) : (
+                <Button
+                  size="sm"
+                  className="rounded-full font-semibold bg-gradient-to-r from-lime-600 to-emerald-600 hover:from-lime-500 hover:to-emerald-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  onClick={loginWithGoogle}
+                >
+                  시작하기
+                </Button>
               )}
             </>
           )}
