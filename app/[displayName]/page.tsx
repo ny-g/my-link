@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, notFound } from "next/navigation"
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore"
+import { collection, query, where, getDocs, orderBy, updateDoc, doc, increment } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Card, CardContent } from "@/components/ui/card"
 import { Terminal, CheckCircle2 } from "lucide-react"
@@ -23,6 +23,7 @@ export default function PublicProfilePage() {
   const displayName = params.displayName as string
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [links, setLinks] = useState<LinkItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isNotFound, setIsNotFound] = useState(false)
@@ -53,6 +54,7 @@ export default function PublicProfilePage() {
         }
 
         setProfile(userData)
+        setUserId(userDoc.id)
 
         // Fetch Links
         const linksRef = collection(db, "users", userDoc.id, "links")
@@ -80,6 +82,16 @@ export default function PublicProfilePage() {
 
   if (isNotFound) {
     notFound() // This will trigger the app/not-found.tsx page
+  }
+
+  const handleLinkClick = async (linkId: string) => {
+    if (!userId) return
+    try {
+      const linkRef = doc(db, "users", userId, "links", linkId)
+      await updateDoc(linkRef, { clicks: increment(1) })
+    } catch (error) {
+      console.error("Error updating click count:", error)
+    }
   }
 
   if (isLoading) {
@@ -167,6 +179,7 @@ export default function PublicProfilePage() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => handleLinkClick(link.id)}
                 className="group relative w-full block outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl z-10"
               >
                 {/* Glow Background Effect for Card */}

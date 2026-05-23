@@ -6,6 +6,7 @@ export interface LinkItem {
   isActive: boolean; // PRD: 특정 사이트 일시 숨김 토글 지원
   order: number; // PRD: 드래그 앤 드롭을 통한 리스트 위아래 순서 변경 지원
   updatedAt?: Date; // 링크 마지막 수정 시각
+  clicks?: number; // 링크 클릭 수
 }
 
 export const dummyLinks: LinkItem[] = [

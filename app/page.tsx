@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { LinkItem } from "@/data/links"
 import { Card, CardContent } from "@/components/ui/card"
-import { PenLine, Terminal, CheckCircle2, Plus, Trash2, Check, X } from "lucide-react"
+import { PenLine, Terminal, CheckCircle2, Plus, Trash2, Check, X, MousePointerClick } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -485,8 +485,12 @@ export default function Page() {
                           <span className="font-bold text-[16px] text-slate-900 dark:text-zinc-100 tracking-tight">
                             {link.title}
                           </span>
-                          <span className="text-[13px] font-medium text-slate-500 dark:text-zinc-400 truncate max-w-[200px] mt-0.5 flex items-center gap-1">
-                            {getDomain(link.url)}
+                          <span className="text-[13px] font-medium text-slate-500 dark:text-zinc-400 truncate max-w-[200px] mt-0.5 flex items-center gap-2">
+                            <span>{getDomain(link.url)}</span>
+                            <span className="flex items-center gap-1 opacity-80 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md">
+                              <MousePointerClick className="w-3.5 h-3.5" />
+                              <span className="font-bold">{link.clicks || 0}</span>
+                            </span>
                           </span>
                         </div>
                       </CardContent>
